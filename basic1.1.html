@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Basic</title>
+      <style>
+        html, body {
+          overflow: hidden;
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          font-size: 1vw;
+        }
+        #titleBar {
+          width:100%;
+          height:10%;
+          background: linear-gradient(to right, blue, white);
+        }
+        #rightBar {
+          width:20%;
+          height:90%;
+          background-color: green;
+          float: right;
+        }
+        #rightTop {
+          width:100%;
+          height:35%;
+          background: linear-gradient(to right, #ccccff, white);
+        }
+        #rightBottom {
+          width:100%;
+          height:65%;
+          background: linear-gradient(to right, #ccccff, white);
+        }
+        #renderCanvas {
+          width: 80%;
+          height: 90%;
+          touch-action: none;
+        }
+        .script {
+          font-family:cursive;
+          font-size: 2em;
+        }
+        .title {
+          font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+          font-size: 4em;
+          color: yellow;
+        }
+        .version {
+          font-family:cursive;
+          font-size: 3em;
+        }
+        #playTitle {
+          font-family: cursive;
+          font-size: 1.5em;
+        }
+        #play {
+          font-family: cursive;
+          font-size: 1.5em;
+          display:table;
+          margin:0 auto;
+        }
+        ul {
+          list-style-position: outside;
+          font-size: 1.1em;
+          padding: "4px";
+        }
+
+    </style>
+    
+    <script src="babylon.max.js"></script>
+    <script src="babylon.gui.min.js"></script>
+    <script src="playCardAnimation.js"></script>
+
+   </head>
+   <body>
+    <div id ="titleBar">
+      <span class="script">&nbsp;&nbsp;&nbsp;&nbsp;The</span> 
+      <span class="title">Game</span> 
+      <span class="script">of</span> 
+      <span class="title">Mathematics</span>
+      <span class ="version">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The Basic Game&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span id = "playTitle">To Play</span>
+    </div>
+    <canvas id="renderCanvas"></canvas>
+    <div id ="rightBar" >
+      <div id = "rightTop">
+        <span id = "play"></span>
+        <ul>
+          <li> Click a card - any card (really just the top one). This sets your target.</li>
+          <li> Keep clicking cards until the target is reached.</li>
+          <li> Discover how Flip, numbers and red and blue discs relate.</li>
+          <li> Help in learning Mathematics from ....</li>
+          <li> book ********************.</li>
+        </ul>
+        
+      </div>
+      <div id = "rightBottom"></div>
+    </div>
+    <script>
+
+    var topCard;
+    var blockCard;
+
+    var turnNb = 0;
+    var cardTotal = 0;
+    var nextTotal = 0;
+    var target = 0;
+   
+    var removeFlipPair = false;
+    var removeElapsedTime = 0;
+    var removeAnimationTime = 3; //seconds
+    var pc0;
+    var pc1;
+    var pc1Position;
+    var removeFlipZQ;;
+    var removeFlipYQ;
+
+    var removePlayed = false;
+    var removePlayedElapsedTime = 0;
+    var removePlayedAnimationTime = 4; //seconds
+    var played3;
+    var played5;
+    var playPosition3 = 0;
+    var playPosition5 = 0;
+    var playedYQ5 = 0;
+    var playedZQ5 = 0;
+    var playedYQ3 = 0;
+    var playedZQ3 = 0;
+
+    var resetElapsedTime = 0;
+    var resetAnimationTime = 5; //seconds
+
+    var discElapsedTime = 0;
+    var discAnimationTime = 5 //seconds
+    var discAction = false;
+
+    var discsOnBoard = [];
+    var discsToPlay = [];
+    var playQuadX = [];
+    var boardQuadX = [];
+    var quadY = [];
+    var yDiscStart = 0.15;
+    var yBoardStart = [];
+    var zPlayStart = [];
+    var zBoardStart = [];
+    var discEnd = 0.6;
+    var discsStartY = 10;
+    var discDrop = 10 - 0.15;
+
+    var showTargetElapsedTime = 0;
+    var showTargetAnimationTime = 3.5; //seconds
+    var showTarget = false;
+
+    var redMat, blueMat;
+
+    var removeDiscsElapsedTime = 0;
+    var removeDiscsAnimationTime = 5; //seconds
+    var removeDiscsAction = false;
+    var topCardAfterCardsPlayed = false; //otherwise after discs removed
+
+    var removeDiscsUpElapsedTime = 0;
+    var removeDiscsUpAnimationTime = 3; //seconds
+    var removeDiscsUpAction = false;
+
+    var removeDiscsPlayX = [];
+    var removeDiscsPlayZ = [];
+    var removeDiscsBoardX = [];
+    var removeDiscsBoardZ = [];
+
+    var zeroDiscsElapsedTime = 0;
+    var zeroDiscsAnimationTime = 5; //seconds
+    var zeroDiscsAction = false;
+
+    var playCardAction = false;
+    var playAnimationTime = 3; //seconds
+    var tagetElapsedTime = 0;
+    var playCount = -1;
+    var targetSet = false;
+    var playStart = BABYLON.Vector3.Zero();
+    playStart.set(6, -0.07 + 0.01 * 51, 0);
+    var playEnd = [
+      BABYLON.Vector3.Zero(), BABYLON.Vector3.Zero(), BABYLON.Vector3.Zero(),
+      BABYLON.Vector3.Zero(), BABYLON.Vector3.Zero(), BABYLON.Vector3.Zero()
+    ] ;
+    playEnd[0].set(-3, -0.07, 6);
+    playEnd[1].set(-2, -0.07, 6);
+    playEnd[2].set(0, -0.07, 6);
+    playEnd[3].set(-3, -0.07, -6);
+    playEnd[4].set(-2, -0.07, -6);
+    playEnd[5].set(0, -0.07, -6);
+
+    var flipDisc = false;
+    var resetDisc = false;
+    var initialRotation = -1;
+    var rotationValue = initialRotation;
+    var currentRotation = 0;
+
+    var targetDisc = [];
+    var targetBox;
+    var resetCyl;
+
+    var writeTotal;
+    var writeScore;
+
+    var heightInPx;
+    var textBox;
+    var dialogueBox;
+    var words;
+    var ending = "s."
+
+    if (BABYLON.Engine.isSupported()) {
+      var canvas = document.getElementById("renderCanvas");
+      var engine = new BABYLON.Engine(canvas, true);
+  
+    var createScene = function() {
+	    var scene = new BABYLON.Scene(engine);
+	    var camera = new BABYLON.ArcRotateCamera("Camera",  -Math.PI / 2, Math.PI / 3, 15, BABYLON.Vector3.Zero(), scene);
+	    camera.attachControl(canvas, true);
+
+      var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+      light.intensity = 0.7;
+
+      var light1 = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, -0.5), scene);
+      light1.intensity = 0.7;
+
+      boardMat = new BABYLON.StandardMaterial("", scene);
+      boardMat.diffuseTexture = new BABYLON.Texture("images/albedo.png", scene);
+
+      // GUI
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+    advancedTexture.rootContainer.scaleX = window.devicePixelRatio;
+    advancedTexture.rootContainer.scaleY = window.devicePixelRatio;
+    
+    dialogueBox = new BABYLON.GUI.Rectangle();
+    dialogueBox.width = 0.22;
+    dialogueBox.height = 0.8;
+    dialogueBox.cornerRadius = 20;
+    dialogueBox.color = "#000000";
+    dialogueBox.thickness = 4;
+    dialogueBox.background = "white";
+    dialogueBox.isVisible = false;
+    dialogueBox.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    dialogueBox.left = "-10px";
+    advancedTexture.addControl(dialogueBox);
+    
+    var panel = new BABYLON.GUI.StackPanel();    
+    dialogueBox.addControl(panel);
+    scene.render();
+    heightInPx = dialogueBox.heightInPixels;
+    
+    textBox = new BABYLON.GUI.Rectangle();
+    textBox.width = 0.9;
+    textBox.height = 6 * heightInPx / 11 + "px";
+    textBox.cornerRadius = 20;
+    textBox.color = "#000000";
+    textBox.thickness = 4;
+    textBox.background = "white";
+    panel.addControl(textBox);
+
+    words = new BABYLON.GUI.TextBlock();
+    words.text = "Congratulations you have achieved the target in " + (turnNb - 2) + " move" + ending;
+    words.textWrapping = true;
+    words.color = "black";
+    words.fontSize = "8%";
+    words.resizeToFit = true;
+    words.paddingLeft = "2px";
+    words.paddingRight = "2px";
+    textBox.addControl(words);
+    
+    var spaceBox = new BABYLON.GUI.Rectangle();
+    spaceBox.width = 0.9;
+    spaceBox.height = "10px";
+    spaceBox.color = "white";
+    spaceBox.background = "white";
+    panel.addControl(spaceBox); 
+
+    var button = BABYLON.GUI.Button.CreateSimpleButton("button", "Start New Game");
+    button.width = 0.8;
+    button.height = 8 * heightInPx / 55 + "px";
+    button.cornerRadius = 10;
+    button.color = "white";
+    button.background = "#1f1f88";
+    button.onPointerUpObservable.add(() => {
+      startNewGame();
+    })
+    panel.addControl(button);
+
+    var startNewGame = () => {
+      blockCard.setEnabled(false);
+      turnNb = 0;
+      cardTotal = 0;
+      nextTotal = 0;
+      target = 0;
+      count = 0;
+      playCount = -1;
+      initialRotation = -1;
+      resetCyl.setEnabled(false);
+      disc.rotation.x = -Math.PI / 2;
+      disc.rotation.y = Math.PI / 5;
+      targetSet = false;
+      for (var i = 0; i < 6; i++) {
+        if (scene.getMeshByName("playedCard" + i)) {
+          scene.getMeshByName("playedCard" + i).dispose();
+        }
+      }
+
+      while (discsOnBoard.length > 0) {
+        discsOnBoard.pop().dispose();
+      }
+      while (discsToPlay.length > 0) {
+        discsToPlay.pop().dispose();
+      }
+      discsOnBoard = [];
+      discsToPlay = [];
+      targetBox.position.y = -1.75;
+      targetValue = Math.floor(BABYLON.Scalar.RandomRange(1, 9.99999));
+      targetSign = Math.floor(BABYLON.Scalar.RandomRange(0, 1.999999));  
+
+      maxTotal = Math.floor(BABYLON.Scalar.RandomRange(15, 54));
+
+      pTotal = 0;
+      pList = [];
+      while (pTotal < maxTotal) {
+        cardNb = Math.floor(BABYLON.Scalar.RandomRange(1, 9.999999));
+        pList.push(cardNb);
+        pTotal += cardNb;
+      }
+      nTotal = 0;
+      nList = [];
+      diff = pTotal - targetValue;      
+      while (nTotal < diff) {
+        cardNb = Math.floor(BABYLON.Scalar.RandomRange(1, 9.99999));
+        nList.push(cardNb);
+        nTotal += cardNb;
+      }
+      if (nTotal !== diff) {
+        nOver = nList.pop();
+        nTotal -= nOver;
+        nList.push(diff - nTotal);
+        nTotal += (diff - nTotal)
+      }
+      if (targetSign === 0) {
+        pList = pList.map((x) => -1 * x);
+        targetValue *= -1;
+      }
+      else {
+        nList  = nList.map((x) => -1 * x);
+      }
+
+      numList = pList.concat(nList);
+      randNumList = [];
+      for (var i = 0; i < numList.length; i++) {
+        randNumList.push([numList[i], Math.random()]);
+      }
+      
+      randNumList.sort((a, b) => a[1] < b[1]);
+
+      for (var i = 0; i < numList.length; i++) {
+        numList[i] = randNumList[i][0];
+      }
+
+      var nbElements = numList.length;
+      var elCount = 0;
+      var el = 0;
+      pTotal = 0;
+      while (elCount < nbElements) {
+        while (pTotal !== targetValue) {
+          pTotal += numList[elCount++];
+        }
+
+        if (elCount < nbElements) {
+          pTotal -= numList[--elCount];
+          el = numList[elCount];
+          numList.splice(elCount, 1);
+          numList.push(el)
+        }
+      }
+
+      pTotal = 0;
+      for (var i = 0; i < numList.length; i++) {
+        pTotal += numList[i];
+      }
+
+      if (targetValue < 0) {
+        cardList.push("F");
+      }
+
+      cardSeq = Math.random();
+      if (cardSeq < 0.3 ) {
+        cardList.push["F", "F"];
+      }
+
+      cardList.push(Math.abs(targetValue));
+
+      for (var i =0; i < numList.length; i++) {
+        if (numList[i] < 0) {
+          cardList.push("F");
+        }
+        cardSeq = Math.random();
+        if (cardSeq < 0.3) {
+          cardList.push("F", "F");
+        }
+        cardList.push(Math.abs(numList[i]));
+      }
+
+      notepadHeight = Math.max(8, Math.ceil(5 * (numList.length + 3) / 12));
+
+      if (notePadBase) {
+        notePadBase.dispose();
+        pads = myScene.getMeshesByTags("pad");
+        while (pads.length > 0) {
+          pads.pop().dispose();
+        }
+        notepadTop.dispose();
+        textMat.dispose();
+      }
+
+      //create notepad
+      notepadBase = BABYLON.MeshBuilder.CreateGround("notepad", {width:3, height: notepadHeight}, scene);
+      notepadBase.material = padMat[1];
+      notepadBase.position.x = -5.75  - 0.025 + Math.random() * 0.05;
+      notepadBase.position.y = -0.07;
+      notepadBase.position.z = -0.025 + Math.random() * 0.05;
+      
+      for (var i = 0; i < 13; i++) {
+        var notepad = notepadBase.clone("");
+        BABYLON.Tags.AddTagsTo(notepad, "pad");
+        notepad.position.x = -5.75  - 0.025 + Math.random() * 0.05;
+        notepad.position.y = -0.07 + 0.01 * i;
+        notepad.position.z = -0.025 + Math.random() * 0.05;
+        notepad.material = padMat[i % 2];
+      }
+      
+      notepadTop = BABYLON.MeshBuilder.CreateGround("notepadTop", {width:3, height: notepadHeight}, scene);
+      notepadTop.position.x = -5.75  - 0.025;
+      notepadTop.position.y = -0.07 + 0.01 * 13;
+
+      textMat = new BABYLON.DynamicTexture("textMat", {width:300, height:notepadHeight * 100}, scene);
+      ctx = textMat.getContext()   
+	
+	    notepadTop.material = new BABYLON.StandardMaterial("Mat", scene);    				
+      notepadTop.material.diffuseTexture = textMat;
+
+      textMat.drawText("Target", 5, 24, font, "black", "white", true, true);
+      textMat.drawText("Played", 5, 60, font, "black", null, true, true);
+      textMat.drawText("Total", 205, 60, font, "black", null, true, true);
+
+      ctx.strokeStyle = "black";
+      ctx.beginPath();
+      ctx.lineWidth = 5;
+      ctx.moveTo(0, 34);
+      ctx.lineTo(300, 34);
+      ctx.stroke();
+      textMat.update();
+
+      ctx.beginPath();
+      ctx.lineWidth = 5;
+      ctx.moveTo(0, 74);
+      ctx.lineTo(300, 74);
+      ctx.stroke();
+      textMat.update();
+
+      ctx.beginPath();
+      ctx.moveTo(200, 34);
+      ctx.lineTo(200, notepadHeight * 100);
+      ctx.stroke();
+      textMat.update();
+
+      dialogueBox.isVisible = false;
+    }
+      
+      var board = BABYLON.MeshBuilder.CreateBox("board", {width: 8, height: 0.15, depth: 8}, scene );
+      board.material = boardMat
+
+      var base = BABYLON.MeshBuilder.CreateBox("base", {width: 16, height: 0.07, depth: 16}, scene );
+      base.material = new BABYLON.StandardMaterial("", scene);
+      base.material.diffuseTexture = new BABYLON.Texture("images/sand.jpg", scene);
+      base.position.y = -0.15;
+
+      var metalMat = new BABYLON.StandardMaterial("", scene);
+      metalMat.diffuseTexture = new BABYLON.Texture("images/metal.jpg", scene);
+      
+      var holderBase = BABYLON.MeshBuilder.CreateBox("holderBbase", {width: 1.5, height: 0.25, depth: 0.75}, scene );
+      holderBase.material = metalMat;
+      holderBase.position.x = 5.5;
+      holderBase.rotation.y = Math.PI / 5;
+      holderBase.position.z = 6;
+
+      var holderLeg = BABYLON.MeshBuilder.CreateCylinder("leg", {diameter: 0.15, height :2}, scene);
+      holderLeg.material = metalMat;
+      holderLeg.parent = holderBase;
+      holderLeg.position.y = 1;
+
+      resetCyl = BABYLON.MeshBuilder.CreateTube("reset", {sideOrientation:BABYLON.Mesh.DOUBLESIDE, path: [new BABYLON.Vector3(0, -0.25, 0), new BABYLON.Vector3(0, 0.25, 0)]}, scene);
+      resetCyl.parent = holderLeg;
+      resetCyl.material = new BABYLON.StandardMaterial("", scene);
+      resetCyl.material.diffuseTexture = new BABYLON.Texture("images/reset.png", scene);
+      resetCyl.material.diffuseTexture.hasAlpha = true;
+      resetCyl.setEnabled(false);
+
+      targetBox = BABYLON.MeshBuilder.CreateBox("targetBox", {width: 8, height: 2, depth: 0.2}, scene );
+      targetBox.rotation.x = Math.PI / 16;
+      targetBox.position.z = 8.55;
+      targetBox.position.y = -1.75;
+      targetBox.material = boardMat;
+
+      var shelf = BABYLON.MeshBuilder.CreateBox("shelf", {width: 8, height: 0.2, depth: 0.2}, scene );
+      shelf.parent = targetBox;
+      shelf.position.y = -0.8;
+      shelf.position.z = -0.2;
+      shelf.material = boardMat;
+
+      var targetPlane = BABYLON.MeshBuilder.CreatePlane("targetPlane", {width: 8, height: 1}, scene );
+      targetPlane.parent = targetBox
+      targetPlane.position.z = -0.12;
+      targetPlane.position.y = 0.45;
+      targetPlane.material = new BABYLON.StandardMaterial("", scene);
+      targetPlane.material.diffuseTexture = new BABYLON.Texture("images/target.png", scene);
+      targetPlane.material.diffuseTexture.hasAlpha = true;
+
+      redMat = new BABYLON.StandardMaterial("red", scene);
+      redMat.diffuseColor = BABYLON.Color3.Red();
+      blueMat = new BABYLON.StandardMaterial("blue", scene);
+      blueMat.diffuseColor = BABYLON.Color3.Blue();
+
+      targetDisc[0] = BABYLON.MeshBuilder.CreateCylinder("disc", {diameter: 0.7, height :0.1}, scene);
+      targetDisc[0].material = redMat;
+      targetDisc[0].rotation.x = -Math.PI / 2;
+      targetDisc[0].parent = targetBox;
+      targetDisc[0].position.y = -0.35;
+      targetDisc[0].position.x = -3.5;
+      targetDisc[0].position.z = -0.1;
+
+      for (var i = 1; i < 9; i++) {
+        targetDisc[i] = targetDisc[0].clone("");
+        targetDisc[i].position.x = -3.5 + i * 0.87;
+      }
+       
+
+      var segments = 24;
+      var deltaAngle = Math.PI / segments;
+      segments += 6;
+      var tubePath = [ ];
+      var a;
+		 	for (var s = 0; s < segments; s++) {
+         a = Math.PI + (s - 2) * deltaAngle;
+         tubePath.push(new BABYLON.Vector3(0.6 * Math.cos(a), 0.6 * Math.sin(a), 0));
+       }
+	
+      var tube = BABYLON.MeshBuilder.CreateTube("tube", {path: tubePath, radius: 0.075, cap: BABYLON.Mesh.CAP_ALL}, scene);
+      tube.parent = holderBase;
+      tube.material = metalMat;
+      tube.position.y = 2.55;
+
+      holderPivot = BABYLON.MeshBuilder.CreateCylinder("leg", {diameter: 0.05, height :1.2}, scene);
+      holderPivot.material = new BABYLON.StandardMaterial("", scene);
+      holderPivot.material.diffuseColor = BABYLON.Color3.Black();
+      holderPivot.parent = tube;
+      holderPivot.rotation.z = Math.PI / 2;
+      holderPivot.position.y = 0.07;
+
+      var outerBin = BABYLON.MeshBuilder.CreateCylinder("outerBin", {diameterTop: 5, diameterBottom: 4, height: 4, tessellation: 12}, scene);
+      var innerBin = BABYLON.MeshBuilder.CreateCylinder("outerBin", {diameterTop: 4.9, diameterBottom: 3.9, height: 3.9, tessellation: 12}, scene);
+      innerBin.position.y = 0.1;
+
+      var outCSG = BABYLON.CSG.FromMesh(outerBin);
+      var inCSG = BABYLON.CSG.FromMesh(innerBin);
+
+      var csg = outCSG.subtract(inCSG);
+
+      outerBin.dispose();
+      innerBin.dispose();
+
+      var bin = csg.toMesh("bin");
+      bin.position.y = -6;
+
+      var faceColors = [];
+      faceColors[0] = new BABYLON.Color4(0, 0, 1, 1);
+      faceColors[1] = new BABYLON.Color4(0, 0, 0, 1);
+      faceColors[2] = new BABYLON.Color4(1, 0, 0, 1);
+    
+      var disc = BABYLON.MeshBuilder.CreateCylinder("disc", {diameter: 0.8, height :0.1, faceColors: faceColors}, scene);
+      disc.position.y = 2.65;
+      disc.position.x = 5.5;
+      disc.position.z = 6;
+      disc.rotation.x = -Math.PI / 2;
+      disc.rotation.y = Math.PI / 5; 
+
+      var card = BABYLON.MeshBuilder.CreateGround("flip", {width:2, height: 3}, scene);
+      card.material = new BABYLON.StandardMaterial("", scene);
+      card.material.diffuseTexture = new BABYLON.Texture("images/flip.png", scene);
+      card.material.diffuseTexture.hasAlpha = true;
+      card.setEnabled(false);
+
+      var pileBase = BABYLON.MeshBuilder.CreateGround("base", {width:2, height: 3}, scene);
+      pileBase.material = new BABYLON.StandardMaterial("", scene);
+      pileBase.material.diffuseTexture = new BABYLON.Texture("images/back.png", scene);
+      pileBase.material.diffuseTexture.hasAlpha = true;
+      pileBase.backFaceCulling = false;
+
+      
+      for (var i = 0; i < 50; i++) {
+        var pile = pileBase.createInstance("", scene);
+        pile.position.x = 6;
+        pile.position.y = -0.07 + 0.01 * i;
+      }
+
+      var padMat = []
+      padMat[0] =  new BABYLON.StandardMaterial("", scene);
+      padMat[0].diffuseColor = BABYLON.Color3.White();
+
+      padMat[1] =  new BABYLON.StandardMaterial("", scene);
+      padMat[1].diffuseColor = new BABYLON.Color3(0.25, 0.25, 0.25);
+
+      upperCard = BABYLON.MeshBuilder.CreateGround("base", {width:2, height: 3}, scene);
+      upperCard.material = new BABYLON.StandardMaterial("", scene);
+      upperCard.material.diffuseTexture = new BABYLON.Texture("images/hold.png", scene);
+      upperCard.material.diffuseTexture.hasAlpha = true;
+      upperCard.backFaceCulling = false;
+      upperCard.position.x = 6;
+      upperCard.position.y = -0.07 + 0.01 * 51;
+
+      topCard = BABYLON.MeshBuilder.CreateGround("base", {width:2, height: 3}, scene);
+      topCard.material = new BABYLON.StandardMaterial("", scene);
+      topCard.material.diffuseTexture = new BABYLON.Texture("images/back.png", scene);
+      topCard.material.diffuseTexture.hasAlpha = true;
+      topCard.backFaceCulling = false;
+      topCard.position.x = 6;
+      topCard.position.y = -0.07 + 0.01 * 52;
+
+      blockCard = topCard.clone("bc");
+      blockCard.position.y = -0.07 + 0.01 * 53;
+      blockCard.setEnabled(false); 
+
+      topCard.actionManager = new BABYLON.ActionManager(scene);
+	
+	    //ON MOUSE ENTER
+	    topCard.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, function(ev){
+        topCard.position.z = 0.1;
+      }));
+	
+	    //ON MOUSE EXIT
+	    topCard.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, function(ev){
+        topCard.position.z = 0;
+	    })); 
+
+      var back = BABYLON.MeshBuilder.CreateGround("base", {width:2, height: 3}, scene);
+      back.material = new BABYLON.StandardMaterial("", scene);
+      back.material.diffuseTexture = new BABYLON.Texture("images/back.png", scene);
+      back.material.diffuseTexture.hasAlpha = true;
+      back.backFaceCulling = false;
+      back.setEnabled(false);      
+      
+      var front = BABYLON.MeshBuilder.CreateGround("flip", {width:2, height: 3}, scene);
+      front.material = new BABYLON.StandardMaterial("", scene);
+      front.material.diffuseTexture = new BABYLON.Texture("images/flip.png", scene);
+      front.material.diffuseTexture.hasAlpha = true;
+      front.rotation.x = Math.PI;
+      
+      front.parent = back;
+
+      back.position = topCard.position.clone();
+
+      var cardList = [];
+      var cardName;
+      var cardNb;
+      var cardSign;
+      var cardCount = 0;
+      var cardValue = 0;
+      var cardDiff;
+      var cardSeq;
+
+      var targetValue;
+      var targetSign;
+      
+
+      var maxTotal;
+
+      var pTotal = 0;
+      var pList = [];
+
+      var nTotal = 0;
+      var nList = [];
+      var diff;
+
+      var numList;
+      var randNumList = [];
+
+      var font = "bold 30px monospace";
+    
+      var pads = [];
+      var notepadHeight;      
+      var notePadBase;
+      var notepadTop;
+      var textMat;
+      var ctx;
+    
+      startNewGame();
+
+      writeTotal = (target) => {
+        ctx.save()
+        ctx.fillStyle = 'red';
+        if (target < 0) {
+          ctx.fillStyle = 'blue';
+        }
+        ctx.beginPath();
+        ctx.arc(265, 15, 14, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+        textMat.drawText(Math.abs(target), 220, 24, font, "black", null, true, true);
+      }
+
+      writeScore = (turn, num, total) => {
+        ctx.beginPath();
+        ctx.lineWidth = 5;
+        ctx.moveTo(0, 74 + 40 * turn);
+        ctx.lineTo(300, 74 + 40 * turn);
+        ctx.stroke();
+        ctx.save();
+        ctx.fillStyle = 'red';
+        if (num < 0) {
+          ctx.fillStyle = 'blue';
+        }
+        ctx.beginPath();
+        ctx.arc(155, 55 + 40 * turn, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+        ctx.save()
+        ctx.fillStyle = 'red';
+        if (total < 0) {
+          ctx.fillStyle = 'blue';
+        }
+        ctx.beginPath();
+        ctx.arc(270, 55 + 40 * turn, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+        if (num < 0) {
+          textMat.drawText("Flip", 20, 60 + 40 * turn, font, "black", null, true, true);
+        }
+        textMat.drawText(Math.abs(num), 104, 60 + 40 * turn, font, "black", null, true, true);
+        if (Math.abs(total) > 9) {
+          textMat.drawText(Math.abs(total), 218, 60 + 40 * turn, font, "black", null, true, true);
+        }
+        else {
+          textMat.drawText(Math.abs(total), 235, 60 + 40 * turn, font, "black", null, true, true);
+        }
+      }
+
+      cardList = ["F", 9, 8, 7, "F", 9, "F", 9, "F", 8, 2];
+      var count = 0;      
+      scene.onPointerObservable.add((pointerInfo) => {      		
+        switch (pointerInfo.type) {
+			    case BABYLON.PointerEventTypes.POINTERUP:
+				    if(pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh === topCard && !playCardAction) {
+                playElapsedTime = 0;
+                discElapsedTime = 0;
+                playCount++;
+                back.setEnabled(true);          
+                cardNb = cardList[count];
+                count++;                
+                if (isNaN(cardNb)) {
+                  cardName = "flip.png";
+                  flipDisc = true;
+                  
+                }
+                else {
+                  playCount = 2;
+                  cardName = "card" + cardNb + ".png";
+                  flipDisc = false;
+                }
+                front.material.diffuseTexture = new BABYLON.Texture("images/" + cardName, scene);
+                front.material.diffuseTexture.hasAlpha = true;
+                playCardAction = true;
+                topCard.setEnabled(false);
+            }
+				  break;
+        }
+      });
+      var first = true;
+      scene.registerBeforeRender(() => {
+        var deltaTime = engine.getDeltaTime();
+        if (playCardAction) {
+          playAnimation(deltaTime, back, playCount, card, cardName, cardNb, disc);
+        }
+        if (removeFlipPair) {
+          removeFlipAnimation(deltaTime, removeFlipYQ, removeFlipZQ);
+        }
+        if (flipDisc) {
+          flipDiscAnimation(disc)
+        }
+        if (resetDisc) {
+          resetDiscAnimation(deltaTime, disc)
+        }
+        if (discAction) {
+          for (var n = 0; n < cardNb; n++) {
+            discAnimation(deltaTime, n, cardNb, currentRotation);
+          }
+        }
+
+        if (removeDiscsAction) {
+          var discsToRemove = Math.min(Math.abs(cardTotal), cardNb);
+          for (var n = 0; n < discsToRemove; n++) {
+            removeDiscsAnimation(n, cardNb);
+          }
+
+          if (removeDiscsElapsedTime >= (removeDiscsAnimationTime + discsToRemove * 0.8) * 1000) {
+            removeDiscsAction = false;
+            removeDiscsUpElapsedTime = 0;
+            removeDiscsUpAction = true;
+          }
+          removeDiscsElapsedTime += deltaTime;
+        }
+
+        if (removeDiscsUpAction) {
+          var discsToRemove = Math.min(Math.abs(cardTotal), cardNb);
+          for (var n = 0; n < discsToRemove; n++) {
+            removeDiscsUpAnimation(n, cardNb);
+          }
+
+          if (removeDiscsUpElapsedTime >= removeDiscsUpAnimationTime * 1000) {
+            removeDiscsUpAction = false;
+            if (Math.abs(cardTotal) === cardNb) {
+                while (discsOnBoard.length > 0) {
+                    discsOnBoard.pop().dispose();
+                }
+                while (discsToPlay.length > 0) {
+                    discsToPlay.pop().dispose();
+                }
+                topCard.setEnabled(true);
+                cardTotal = nextTotal;
+                if (cardTotal === target) {
+                  ending = "s.";
+                  if (turnNb === 2) {
+                      ending = ".";
+                  }
+                  words.text = "Congratulations you have achieved the target in " + (turnNb - 1) + " move"+ ending;
+                  blockCard.setEnabled(true);
+                  dialogueBox.isVisible = true;
+                }
+            }
+            else {
+                if (Math.abs(cardTotal) < cardNb) {
+                  for (var n = 0; n < Math.abs(cardTotal); n++) {
+                    discsOnBoard.pop().dispose();
+                  } 
+                  for (var n = 0; n < Math.abs(cardTotal); n++) {
+                    discsToPlay.pop().dispose();
+                  }
+                  zeroDiscsAction = true;
+                  zeroDiscsElapsedTime = 0;
+                }
+                else { //when Math.abs(cardTotal) > cardNb
+                    while (discsToPlay.length > 0) {
+                      discsToPlay.pop().dispose();
+                    }               
+                    for (var n = 0; n < cardNb; n++) {
+                      discsOnBoard.pop().dispose();
+                    }
+                    topCard.setEnabled(true);
+                    cardTotal = nextTotal;
+                    if (cardTotal === target) {
+                      ending = "s.";
+                      if (turnNb === 2) {
+                        ending = ".";
+                      }
+                      words.text = "Congratulations you have achieved the target in " + (turnNb - 1) + " move"+ ending;
+                      blockCard.setEnabled(true);
+                      dialogueBox.isVisible = true;
+                    }
+                }
+            }
+          }
+          removeDiscsUpElapsedTime += deltaTime;
+        }
+
+        if (zeroDiscsAction) {
+          if (Math.abs(nextTotal) < Math.abs(cardTotal)) {
+            var moveNb = Math.abs(nextTotal);
+          }
+          else { //Math.abs(cardTotal) < Math.abs(nestTotal)
+            var moveNb = Math.abs(cardTotal);
+          }
+          var nbDiscs = discsToPlay.length - 1;
+          for (var n = 0; n < moveNb; n++) {
+            zeroDiscsAnimation(n, nbDiscs);
+          }
+          if (zeroDiscsElapsedTime >= (zeroDiscsAnimationTime + Math.abs(cardTotal) * 0.3) * 1000) {
+            zeroDiscsAction = false;
+            //removeCardsPlayed("NA");
+            
+            var i = 0;
+            while (i < moveNb) {
+              discsOnBoard.push(discsToPlay.pop());
+              i++;
+            }
+            while (discsToPlay.length > 0) {
+              discsOnBoard.push(discsToPlay.shift());
+            }
+            topCard.setEnabled(true);
+            cardTotal = nextTotal;
+            if (cardTotal === target) {
+              ending = "s.";
+              if (turnNb === 2) {
+                ending = ".";
+              }
+              words.text = "Congratulations you have achieved the target in " + (turnNb - 1) + " move"+ ending;
+              blockCard.setEnabled(true);
+              dialogueBox.isVisible = true;
+            }
+          }
+          zeroDiscsElapsedTime += deltaTime;
+        }
+
+        if (removePlayed) {
+          removePlayedAnimation(deltaTime, playedYQ5, playedZQ5, playedYQ3, playedZQ3, cardNb);
+        }
+
+        if (showTarget) {
+          showTargetAnimation(deltaTime, cardNb);
+        }
+
+        
+      });
+
+       
+
+	    return scene;
+}; 
+  
+  
+  var scene = createScene();
+  
+  engine.runRenderLoop(function () {
+    scene.render();
+  
+  });
+  
+      window.addEventListener("resize", function () {
+        engine.resize();
+            if (dialogueBox.isVisible) {
+                heightInPx = dialogueBox.heightInPixels;
+                textBox.height = 4 * heightInPx / 11 + "px";
+              }
+            });
+        }
+      </script>
+  </body>
+  </html>
